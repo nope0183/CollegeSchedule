@@ -1,6 +1,7 @@
 package com.nope.scheduletile.phone.widget
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -8,6 +9,7 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
@@ -91,7 +93,7 @@ private fun WidgetContent(s: ScheduleState) {
 
     val current = s.current
     val next = s.next
-    val openSettings = actionStartActivity<SettingsActivity>()
+    val openSettings = actionStartActivity(Intent(LocalContext.current, SettingsActivity::class.java))
     val refresh = actionRunCallback<RefreshCallback>()
 
     Column(
