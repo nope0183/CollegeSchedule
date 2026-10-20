@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Расписание</string>
+    <string name="widget_label">Пары</string>
+    <string name="widget_description">Текущая и следующая пара, отсчёт и расписание на завтра</string>
+</resources>

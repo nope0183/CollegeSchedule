@@ -1,0 +1,33 @@
+name: Release
+
+# Публикует APK в GitHub Releases при пуше тега вида v1.0.0
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+      - name: Build release APKs
+        run: ./gradlew :wear:assembleRelease :phone:assembleRelease
+      - name: Rename APKs
+        run: |
+          mv wear/build/outputs/apk/release/*.apk "Schedule-wear-${GITHUB_REF_NAME}.apk"
+          mv phone/build/outputs/apk/release/*.apk "Schedule-phone-${GITHUB_REF_NAME}.apk"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: Schedule-*.apk
+          generate_release_notes: true

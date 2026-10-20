@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Расписание</string>
+    <string name="tile_label">Пары</string>
+    <string name="tile_description">Текущая и следующая пара вашей группы</string>
+    <string name="complication_label">Текущая пара</string>
+</resources>
