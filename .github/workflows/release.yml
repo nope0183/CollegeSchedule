@@ -27,7 +27,7 @@ jobs:
         run: |
           mv wear/build/outputs/apk/release/*.apk "Schedule-wear-${GITHUB_REF_NAME}.apk"
           mv phone/build/outputs/apk/release/*.apk "Schedule-phone-${GITHUB_REF_NAME}.apk"
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: Schedule-*.apk
           generate_release_notes: true
