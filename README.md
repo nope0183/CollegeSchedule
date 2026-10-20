@@ -109,4 +109,4 @@ phone/  widget/          виджет на Jetpack Glance, будильник о
 
 ## Лицензия
 
-MIT, см. [LICENSE](LICENSE). Перед публикацией замените `<ВАШЕ ИМЯ>` в файле LICENSE.
+MIT, см. [LICENSE](LICENSE).
