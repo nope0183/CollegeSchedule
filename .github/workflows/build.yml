@@ -21,11 +21,11 @@ jobs:
         run: chmod +x gradlew
       - name: Build debug APKs (watch + phone)
         run: ./gradlew :wear:assembleDebug :phone:assembleDebug
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: schedule-wear-debug
           path: wear/build/outputs/apk/debug/*.apk
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: schedule-phone-debug
           path: phone/build/outputs/apk/debug/*.apk
