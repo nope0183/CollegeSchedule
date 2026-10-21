@@ -9,41 +9,139 @@ import androidx.wear.protolayout.DimensionBuilders.weight
 import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.LayoutElementBuilders.LayoutElement
 import androidx.wear.protolayout.ModifiersBuilders
+import androidx.wear.protolayout.ModifiersBuilders.Clickable
 import androidx.wear.protolayout.layout.column
 import androidx.wear.protolayout.material3.ButtonDefaults.filledTonalButtonColors
+import androidx.wear.protolayout.material3.CardDefaults.filledCardColors
 import androidx.wear.protolayout.material3.CardDefaults.filledTonalCardColors
 import androidx.wear.protolayout.material3.MaterialScope
 import androidx.wear.protolayout.material3.Typography
+import androidx.wear.protolayout.material3.buttonGroup
 import androidx.wear.protolayout.material3.primaryLayout
 import androidx.wear.protolayout.material3.text
+import androidx.wear.protolayout.material3.textButton
 import androidx.wear.protolayout.material3.textEdgeButton
 import androidx.wear.protolayout.material3.titleCard
 import androidx.wear.protolayout.modifiers.clickable
 import androidx.wear.protolayout.types.LayoutColor
 import androidx.wear.protolayout.types.layoutString
 import com.nope.scheduletile.SettingsActivity
+import com.nope.scheduletile.data.BrowsePage
+import com.nope.scheduletile.data.BrowsePages
 import com.nope.scheduletile.data.Fmt
+import com.nope.scheduletile.data.Lesson
 import com.nope.scheduletile.data.ScheduleState
 
-fun MaterialScope.tileLayout(ctx: Context, s: ScheduleState): LayoutElement {
+/**
+ * @param pages страницы листалки (пары по дням); пусто, если данных нет
+ * @param browsePage страница, которую листает пользователь, или null: тогда обычный вид «сейчас»
+ */
+fun MaterialScope.tileLayout(
+    ctx: Context,
+    s: ScheduleState,
+    pages: List<BrowsePage>,
+    browsePage: BrowsePage?,
+): LayoutElement {
     val openSettings = clickable(
         action = launchAction(ComponentName(ctx, SettingsActivity::class.java), emptyMap()),
         id = "settings",
     )
+    if (browsePage != null) return browseLayout(s, pages, browsePage)
+
+    // Кнопка внизу: «Расписание» открывает листалку; пока нет группы или данных, как раньше выбор группы.
+    val entry = BrowsePages.entryKey(pages, s.now)
+    val canBrowse = s.group != null && s.hasData && entry != null
     return primaryLayout(
         titleSlot = { text(headerText(s).layoutString, typography = Typography.LABEL_SMALL) },
-        mainSlot = { mainContent(s) },
+        mainSlot = { mainContent(s, openSettings) },
         bottomSlot = {
             textEdgeButton(
-                onClick = openSettings,
+                onClick = if (canBrowse) clickable(id = TileNav.clickId(entry!!, s.now)) else openSettings,
                 labelContent = {
-                    text((s.group?.let { "Группа $it" } ?: "Выбрать группу").layoutString)
+                    text(
+                        (if (canBrowse) "Расписание" else s.group?.let { "Группа $it" } ?: "Выбрать группу")
+                            .layoutString
+                    )
                 },
                 colors = filledTonalButtonColors(),
             )
         },
     )
 }
+
+// ───────────────────────────── Листалка ─────────────────────────────
+
+private fun MaterialScope.browseLayout(
+    s: ScheduleState,
+    pages: List<BrowsePage>,
+    page: BrowsePage,
+): LayoutElement {
+    val idx = pages.indexOf(page)
+    // По кругу: перед первой страницей и после последней «сейчас», так что мёртвых кнопок нет
+    val prev = pages.getOrNull(idx - 1)?.key ?: TileNav.LIVE
+    val next = pages.getOrNull(idx + 1)?.key ?: TileNav.LIVE
+
+    val day = Fmt.dayLabel(page.lessons.first().start, s.now)
+    val title = if (page.parts > 1) "$day · ${page.part + 1}/${page.parts}" else day
+
+    val cards = page.lessons.map { lessonCard(it, s) }
+    val children = mutableListOf<LayoutElement>()
+    cards.forEachIndexed { i, c ->
+        if (i > 0) children += spacer(3f)
+        children += c
+    }
+    children += spacer(4f)
+    children += navRow(prev, next, s.now)
+
+    return primaryLayout(
+        titleSlot = { text(title.layoutString, typography = Typography.LABEL_SMALL) },
+        mainSlot = { column(*children.toTypedArray(), width = expand(), height = expand()) },
+    )
+}
+
+/** Карточка пары в листалке: название, кабинет, время начала. Идущая пара выделена акцентом. */
+private fun MaterialScope.lessonCard(l: Lesson, s: ScheduleState): LayoutElement {
+    val running = s.now >= l.start && s.now < l.end
+    return titleCard(
+        onClick = clickable(id = "lesson_${l.start}"),
+        height = expand(),
+        colors = if (running) filledCardColors() else filledTonalCardColors(),
+        title = { text(l.subject.layoutString) },
+        content = { text(Fmt.roomLine(l).layoutString) },
+        time = { text(Fmt.time(l.start).layoutString) },
+    )
+}
+
+/** Ряд кнопок ‹ Сейчас ›. */
+private fun MaterialScope.navRow(prev: String, next: String, now: Long): LayoutElement =
+    buttonGroup(height = dp(36f)) {
+        buttonGroupItem {
+            textButton(
+                onClick = clickable(id = TileNav.clickId(prev, now)),
+                labelContent = { text("‹".layoutString) },
+                width = expand(),
+                height = expand(),
+                colors = filledTonalButtonColors(),
+            )
+        }
+        buttonGroupItem {
+            textButton(
+                onClick = clickable(id = TileNav.clickId(TileNav.LIVE, now)),
+                labelContent = { text("Сейчас".layoutString) },
+                width = weight(2f),
+                height = expand(),
+            )
+        }
+        buttonGroupItem {
+            textButton(
+                onClick = clickable(id = TileNav.clickId(next, now)),
+                labelContent = { text("›".layoutString) },
+                width = expand(),
+                height = expand(),
+                colors = filledTonalButtonColors(),
+            )
+        }
+    }
 
 /** Пары на сегодня кончились (или ещё не начались), а ближайшая — в другой день. */
 private fun isNextDayMode(s: ScheduleState): Boolean {
@@ -65,8 +163,8 @@ private fun headerText(s: ScheduleState): String {
     }
 }
 
-private fun MaterialScope.mainContent(s: ScheduleState): LayoutElement {
-    if (s.group == null) return messageCard("Выберите группу", "Нажмите кнопку ниже")
+private fun MaterialScope.mainContent(s: ScheduleState, openSettings: Clickable): LayoutElement {
+    if (s.group == null) return messageCard("Выберите группу", "Нажмите, чтобы выбрать", openSettings)
     if (!s.hasData) return messageCard("Нет данных", "Поставьте часы на зарядку")
 
     if (isNextDayMode(s)) return nextDayContent(s)
@@ -84,9 +182,13 @@ private fun MaterialScope.mainContent(s: ScheduleState): LayoutElement {
     return column(*children.toTypedArray(), width = expand(), height = expand())
 }
 
-private fun MaterialScope.messageCard(title: String, sub: String): LayoutElement =
+private fun MaterialScope.messageCard(
+    title: String,
+    sub: String,
+    onClick: Clickable = clickable(id = "message"),
+): LayoutElement =
     titleCard(
-        onClick = clickable(id = "message"),
+        onClick = onClick,
         height = expand(),
         title = { text(title.layoutString) },
         content = { text(sub.layoutString) },
