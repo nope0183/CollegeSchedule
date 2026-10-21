@@ -56,7 +56,9 @@ private fun headerText(s: ScheduleState): String {
     val n = s.next
     return when {
         s.group == null || !s.hasData -> "Расписание"
-        c != null -> "${c.num} пара · ${Fmt.minutesShort(c.end - s.now)}"
+        c != null -> listOf("${c.num} пара", Fmt.room(c), Fmt.minutesShort(c.end - s.now))
+            .filter { it.isNotEmpty() }
+            .joinToString(" · ")
         n != null && isNextDayMode(s) ->
             "${Fmt.dayLabel(n.start, s.now)} · ${Fmt.minutesShort(n.start - s.now)}"
         else -> "Сейчас"
@@ -114,7 +116,7 @@ private fun MaterialScope.currentCard(s: ScheduleState): LayoutElement {
     }
     val (head, sub) =
         if (s.hadEarlierToday) "Перемена" to "до следующей пары"
-        else "Пары не начались" to "первая в ${Fmt.time(n.start)}"
+        else "Пары не начались" to listOf("первая в ${Fmt.time(n.start)}", Fmt.roomLine(n)).joinToString(" · ")
     return titleCard(
         onClick = refresh,
         height = expand(),
