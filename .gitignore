@@ -26,3 +26,5 @@ Thumbs.db
 /phone/
 /wear/
 local.properties
+
+.idea/
